@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { FindOneOptions, Not, Repository } from 'typeorm';
 import { InternalServerErrorException, Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MotoristaEntity } from './entity/motorista.entity';
@@ -11,7 +11,7 @@ export class MotoristasService {
     private readonly motoristaRepository: Repository<MotoristaEntity>
   ) {}
 
-  async findAll() {
+  async findAll(): Promise<MotoristaEntity[]> {
     try {
       return await this.motoristaRepository.find()
     } catch(error: any) {
@@ -19,7 +19,11 @@ export class MotoristasService {
     }
   }
 
-  async findOne(id: string) {
+  async findByFilter(filter: FindOneOptions<MotoristaEntity>) {
+    return await this.motoristaRepository.findOne(filter)
+  }
+
+  async findOne(id: string): Promise<MotoristaEntity> {
     const motorista: MotoristaEntity = await this.motoristaRepository.findOne(id)
 
     if(!motorista) throw new BadRequestException('Motorista não encontrado')
@@ -29,17 +33,18 @@ export class MotoristasService {
   }
 
   async create(data: MotoristaDto): Promise<MotoristaEntity> {
-    try {
-      const createdData = this.motoristaRepository.create(data)
-      return await this.motoristaRepository.save(createdData)
 
-    } catch(error: any) {
-      throw new InternalServerErrorException(error.message)
-    }
+    await this.verificaMotoristaComMesmoCPF(data.cpf)
+
+    const createdData = this.motoristaRepository.create(data)
+
+    return await this.motoristaRepository.save(createdData)
   }
 
-  async updateById(id: string, data) {
+  async updateById(id: string, data: MotoristaDto): Promise<MotoristaEntity> {
     const motorista = await this.findOne(id)
+
+    await this.verificaMotoristaComMesmoCPF(data.cpf, id)
 
     this.motoristaRepository.merge(motorista, data)
 
@@ -47,16 +52,23 @@ export class MotoristasService {
 
   }
 
-  async deleteById(id: string) {
-    try {
-      await this.motoristaRepository.findOne(id)
-  
-      await this.motoristaRepository.softDelete(id)
+  async deleteById(id: string): Promise<void> {
+    await this.motoristaRepository.findOne(id)
 
-    } catch (error: any) {
-      throw new InternalServerErrorException(error.message)
-    }
+    await this.motoristaRepository.softDelete(id)
 
+  }
+
+  async verificaMotoristaComMesmoCPF(cpf: string, idDiferente?: string) {
+    const filter: FindOneOptions<MotoristaEntity> = idDiferente ? ({
+      where: { cpf: cpf, id: Not(idDiferente)}
+    }) : ({
+      where: { cpf: cpf}
+    })
+
+    const motoristaComMesmoCpf = await this.findByFilter(filter)
+
+    if(motoristaComMesmoCpf) throw new BadRequestException('Já existe um motorista cadastrado com este cpf')
   }
 
 }
