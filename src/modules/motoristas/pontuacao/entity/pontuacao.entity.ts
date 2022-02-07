@@ -1,21 +1,18 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
-@Entity({ name: 'motorista' })
-export class MotoristaEntity {
+@Entity({ name: 'pontuacao' })
+export class PontuacaoEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
-  @Column()
-  nome: string
+  @Column({ name: 'motorista_id'})
+  motoristaId: string
+
+  @Column({ name: 'nota', type: 'float'})
+  nota: number
 
   @Column()
-  cpf: string
-
-  @Column()
-  idade: string
-
-  @Column({type: 'tinyint', width: 1 })
-  ativo: number
+  observacao: string
 
   @CreateDateColumn({ name: 'created_at'})
   createdAt: string
@@ -25,6 +22,4 @@ export class MotoristaEntity {
 
   @DeleteDateColumn({ name: 'deleted_at'})
   deletedAt: string
-
-  pontuacao: number
 }

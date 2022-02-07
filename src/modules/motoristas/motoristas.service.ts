@@ -3,12 +3,14 @@ import { InternalServerErrorException, Injectable, BadRequestException, NotFound
 import { InjectRepository } from '@nestjs/typeorm';
 import { MotoristaEntity } from './entity/motorista.entity';
 import { MotoristaDto } from './dto/motorista.dto';
+import { PontuacaoService } from './pontuacao/pontuacao.service';
 
 @Injectable()
 export class MotoristasService {
   constructor(
     @InjectRepository(MotoristaEntity)
-    private readonly motoristaRepository: Repository<MotoristaEntity>
+    private readonly motoristaRepository: Repository<MotoristaEntity>,
+    private readonly pontuacaoService: PontuacaoService
   ) {}
 
   async findAll(): Promise<MotoristaEntity[]> {
@@ -26,9 +28,12 @@ export class MotoristasService {
   async findOne(id: string): Promise<MotoristaEntity> {
     const motorista: MotoristaEntity = await this.motoristaRepository.findOne(id)
 
-    if(!motorista) throw new BadRequestException('Motorista não encontrado')
     
-    return motorista
+    if(!motorista) throw new BadRequestException('Motorista não encontrado')
+
+    const pontuacaoMedia = await this.pontuacaoService.getPontuacaoMediaMotorista(id)
+    
+    return {...motorista, pontuacao: pontuacaoMedia}
 
   }
 
